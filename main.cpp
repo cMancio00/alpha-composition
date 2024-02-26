@@ -4,11 +4,9 @@
 #include "stb_image_write.h"
 #include <iostream>
 
-#define FOREGROUND_PATH "../Input/kitty.jpg"
-#define BACKGROUND_PATH "../Input/pooh.png"
+#define FOREGROUND_PATH "../Input/pooh.png"
+#define BACKGROUND_PATH "../Input/mario.png"
 
-#define RGB 3
-#define RGBA 4
 #define OUTPUT_PATH "../Output/output.png"
 
 struct Image{
@@ -19,14 +17,14 @@ struct Image{
 void loadImage(const std::string &image_path, Image &image){
     //TODO: usare stbi_info per leggere il numero di canali
     image.rgb_image = stbi_load(image_path.c_str(),&image.width, &image.height,
-                                     &image.channels, RGBA);
+                                     &image.channels, STBI_rgb_alpha);
     if(!image.rgb_image){
         std::cerr << "Unable to load image." << std::endl;
     }else{
         std::cout << "Image loaded." << std::endl;
         std::cout << image.width<<"x"<< image.height<< " and "
                   << image.channels << " channels." <<std::endl;
-        if(image.channels != RGBA){
+        if(image.channels != STBI_rgb_alpha){
             std::cout << "WARNING: Image does not have alpha channel!" << std::endl;
         }
     }
@@ -46,10 +44,18 @@ int main(){
 
     for(int y = 0; y < foreground.height; ++y){
         for(int x = 0; x < foreground.width; ++x){
-            //Making index to
+
             int backgroundIndex = (y * background.width + x) * background.channels;
-            for (int c = 0; c < RGBA; ++c) {
-                background.rgb_image[backgroundIndex + c] = 255;
+            int foregroundIndex = (y * foreground.width + x) * foreground.channels;
+
+            float alpha = foreground.rgb_image[foregroundIndex + 3] / 255.0f;
+            float beta = 1.0f - alpha;
+
+            for (int c = 0; c < 3; ++c) {
+                background.rgb_image[backgroundIndex + c] =
+                        static_cast<int>(background.rgb_image[backgroundIndex + c] * beta
+                        + foreground.rgb_image[foregroundIndex + c] * alpha);
+
             }
         }
     }
