@@ -4,8 +4,10 @@
 #include "stb_image_write.h"
 #include <iostream>
 
-#define FOREGROUND_PATH "../Input/Background.png"
+#define FOREGROUND_PATH "../Input/pooh.png"
+#define RGB 3
 #define RGBA 4
+#define OUTPUT_PATH "../Output/output.png"
 
 struct Image{
     int width{0},height{0},channels{0};
@@ -13,7 +15,7 @@ struct Image{
 };
 
 void loadImage(const std::string &image_path, Image &image){
-    image.rgb_image = stbi_load(FOREGROUND_PATH,&image.width, &image.height,
+    image.rgb_image = stbi_load(image_path.c_str(),&image.width, &image.height,
                                      &image.channels, RGBA);
     if(!image.rgb_image){
         std::cerr << "Unable to load image." << std::endl;
@@ -27,8 +29,16 @@ void loadImage(const std::string &image_path, Image &image){
     }
 }
 
+void saveImage(const std::string &output_path, const Image image){
+    stbi_write_png(output_path.c_str(), image.width, image.height, image.channels,
+                   image.rgb_image, image.width * image.channels);
+}
+
 int main(){
     Image foreground;
     loadImage(FOREGROUND_PATH,foreground);
+    saveImage(OUTPUT_PATH,foreground);
+    std::cout << "Saved" << std::endl;
+    stbi_image_free(foreground.rgb_image);
     return 0;
 }
