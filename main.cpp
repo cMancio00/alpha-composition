@@ -15,6 +15,7 @@ struct Image{
 };
 
 void loadImage(const std::string &image_path, Image &image){
+    //TODO: usare stbi_info per leggere il numero di canali
     image.rgb_image = stbi_load(image_path.c_str(),&image.width, &image.height,
                                      &image.channels, RGBA);
     if(!image.rgb_image){
