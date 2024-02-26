@@ -4,7 +4,9 @@
 #include "stb_image_write.h"
 #include <iostream>
 
-#define FOREGROUND_PATH "../Input/pooh.png"
+#define FOREGROUND_PATH "../Input/kitty.jpg"
+#define BACKGROUND_PATH "../Input/pooh.png"
+
 #define RGB 3
 #define RGBA 4
 #define OUTPUT_PATH "../Output/output.png"
@@ -38,8 +40,30 @@ void saveImage(const std::string &output_path, const Image image){
 int main(){
     Image foreground;
     loadImage(FOREGROUND_PATH,foreground);
-    saveImage(OUTPUT_PATH,foreground);
+    Image background;
+    loadImage(BACKGROUND_PATH,background);
+
+
+    for(int y = 0; y < foreground.height; ++y){
+        for(int x = 0; x < foreground.width; ++x){
+            //Making index to
+            int backgroundIndex = (y * background.width + x) * background.channels;
+            for (int c = 0; c < RGBA; ++c) {
+                background.rgb_image[backgroundIndex + c] = 255;
+            }
+        }
+    }
+
+
+    std::cout << "Done" << std::endl;
+
+    saveImage(OUTPUT_PATH,background);
     std::cout << "Saved" << std::endl;
+
     stbi_image_free(foreground.rgb_image);
+    stbi_image_free(background.rgb_image);
+
+
+
     return 0;
 }
