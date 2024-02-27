@@ -3,47 +3,63 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 #include <iostream>
+#include <vector>
 #include <omp.h>
 
-#define FOREGROUND_PATH "../Input/pooh2k.png"
-#define BACKGROUND_PATH "../Input/1.jpg"
+#define FOREGROUND_PATH "../Input/kitty.png"
+#define BACKGROUND_PATH "../Input/Backgrounds/"
 #define OUTPUT_PATH "../Output/output.png"
+
+static const int maxImageIdx = 564;
 
 struct Image{
     int width{0},height{0},channels{0};
     uint8_t *rgb_image{nullptr};
 };
 
+/*
+ * Load a single image. If image is not RGBA, alpha channel is assumed completely opaque (255).
+ */
 void loadImage(const std::string &image_path, Image &image){
     image.rgb_image = stbi_load(image_path.c_str(),&image.width, &image.height,
                                      &image.channels, STBI_rgb_alpha);
-    if(!image.rgb_image){
-        std::cerr << "Unable to load image." << std::endl;
-    }else{
-        std::cout << "Image loaded." << std::endl;
-        std::cout << image.width<<"x"<< image.height<< " and "
-                  << image.channels << " channels." <<std::endl;
-        if(image.channels != STBI_rgb_alpha){
-            std::cout << "WARNING: Image does not have alpha channel!" << std::endl
-            << "Forcing alpha channel to 255 (completely visible)." << std::endl;
-            image.channels = STBI_rgb_alpha;
-        }
+    if(image.channels != STBI_rgb_alpha){
+        image.channels = STBI_rgb_alpha;
     }
 }
+/*
+ * Load jpg images named i.jpg where i is a natural number.
+ * All the images are put in a vector of Image struct. AoS.
+ */
+std::vector<Image> load_images(int start_idx, int end_idx) {
+    std::vector<Image> img_lst;
+    for (unsigned long i = start_idx; i <= end_idx; i++) {
+        char filename[32];
+        sprintf(filename, "%s%lu.jpg", BACKGROUND_PATH,i);
+        Image img;
+        loadImage(filename,img);
+        if (!img.rgb_image) {
+            std::cout << "ERROR: Failed to load image: " << filename << std::endl;
+        } else {
+            img_lst.push_back(img);
+        }
+    }
+    return img_lst;
+}
 
+/*
+ * Saves image as png in a desired location.
+ */
 void saveImage(const std::string &output_path, const Image image){
     stbi_write_png(output_path.c_str(), image.width, image.height, image.channels,
                    image.rgb_image, image.width * image.channels );
 }
 
-int main(){
-    Image foreground;
-    loadImage(FOREGROUND_PATH,foreground);
-    Image background;
-    loadImage(BACKGROUND_PATH,background);
-
-    double startTime = omp_get_wtime();
-
+/*
+ * Alpha-compose foreground image on background image.
+ * Composition will be saved on background, while foreground remains untouched.
+ */
+void compose(const Image &foreground, Image &background) {
     for(int y = 0; y < foreground.height; ++y){
         for(int x = 0; x < foreground.width; ++x){
 
@@ -61,8 +77,24 @@ int main(){
             }
         }
     }
+}
 
+int main(){
+    Image foreground;
+    loadImage("../Input/Backgrounds/1.jpg",foreground);
+
+    Image background;
+    loadImage("../Input/1.jpg",background);
+
+    double startTime = omp_get_wtime();
+    auto backgrounds = load_images(1, maxImageIdx);
     double endTime = omp_get_wtime();
+    std::cout << "Backgrounds loaded #: " << backgrounds.size() << " - expected #: " << maxImageIdx << std::endl;
+    std::cout << "Loading time: " << endTime - startTime << std::endl << std::endl;
+
+    startTime = omp_get_wtime();
+    compose(foreground, background);
+    endTime = omp_get_wtime();
     std::cout << "Compositing time: " << endTime - startTime << std::endl << std::endl;
 
     std::cout << "Saving output image as "<< OUTPUT_PATH << std::endl;
