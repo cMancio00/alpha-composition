@@ -8,7 +8,7 @@
 
 #define FOREGROUND_PATH "../Input/kitty.png"
 #define BACKGROUND_PATH "../Input/Backgrounds/"
-#define OUTPUT_PATH "../Output/output.png"
+#define OUTPUT_PATH "../Output/"
 
 static const int maxImageIdx = 564;
 
@@ -59,7 +59,10 @@ void saveImage(const std::string &output_path, const Image image){
  * Alpha-compose foreground image on background image.
  * Composition will be saved on background, while foreground remains untouched.
  */
-void compose(const Image &foreground, Image &background) {
+bool compose(const Image &foreground, Image &background) {
+    if(foreground.height > background.height | foreground.width > background.width){
+        return false;
+    }
     for(int y = 0; y < foreground.height; ++y){
         for(int x = 0; x < foreground.width; ++x){
 
@@ -77,14 +80,14 @@ void compose(const Image &foreground, Image &background) {
             }
         }
     }
+    return true;
 }
 
 int main(){
     Image foreground;
-    loadImage("../Input/Backgrounds/1.jpg",foreground);
+    loadImage(FOREGROUND_PATH,foreground);
 
-    Image background;
-    loadImage("../Input/1.jpg",background);
+    double totalStartTime = omp_get_wtime();
 
     double startTime = omp_get_wtime();
     auto backgrounds = load_images(1, maxImageIdx);
@@ -92,19 +95,44 @@ int main(){
     std::cout << "Backgrounds loaded #: " << backgrounds.size() << " - expected #: " << maxImageIdx << std::endl;
     std::cout << "Loading time: " << endTime - startTime << std::endl << std::endl;
 
+    std::cout << "Starting alpha-composing" << std::endl;
     startTime = omp_get_wtime();
-    compose(foreground, background);
+    bool isComposed;
+    for(Image &background : backgrounds){
+        isComposed = compose(foreground, background);
+        if(!isComposed){
+            std::cout << "Foreground is bigger than backgroud: "
+            << foreground.height<<"x"<<foreground.width << " vs "
+            << background.height<<"x"<<background.width << std::endl;
+        }
+    }
     endTime = omp_get_wtime();
     std::cout << "Compositing time: " << endTime - startTime << std::endl << std::endl;
 
-    std::cout << "Saving output image as "<< OUTPUT_PATH << std::endl;
-    saveImage(OUTPUT_PATH,background);
-    std::cout << "Output image saved" << std::endl;
+    startTime = omp_get_wtime();
+    std::cout << "Saving output image in "<< OUTPUT_PATH << std::endl;
 
+    for(int i = 0; i < backgrounds.size(); ++i){
+        char filename[32];
+        sprintf(filename, "%s%i.png", OUTPUT_PATH,i);
+        saveImage(filename,backgrounds[i]);
+    }
+    endTime = omp_get_wtime();
+    std::cout << "Output image saved" << std::endl;
+    std::cout << "Saving time: " << endTime - startTime << std::endl << std::endl;
+
+    startTime = omp_get_wtime();
     std::cout << "Releasing memory resources" << std::endl;
     stbi_image_free(foreground.rgb_image);
-    stbi_image_free(background.rgb_image);
-    std::cout << "Done" << std::endl;
+    for(Image &background : backgrounds){
+        stbi_image_free(background.rgb_image);
+    }
+    backgrounds.clear();
+    endTime = omp_get_wtime();
+    std::cout << "Memory realeased" << std::endl;
+    std::cout << "Realising time: " << endTime - startTime << std::endl << std::endl;
 
+    double totalEndTime = omp_get_wtime();
+    std::cout << "Total run time: " << totalEndTime - totalStartTime << std::endl << std::endl;
     return 0;
 }
