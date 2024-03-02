@@ -33,6 +33,7 @@ void loadImage(const std::string &image_path, Image &image){
  */
 std::vector<Image> load_images(int start_idx, int end_idx) {
     std::vector<Image> img_lst;
+#pragma omp parallel for
     for (unsigned long i = start_idx; i <= end_idx; i++) {
         char filename[32];
         sprintf(filename, "%s%lu.jpg", BACKGROUND_PATH,i);
@@ -41,6 +42,7 @@ std::vector<Image> load_images(int start_idx, int end_idx) {
         if (!img.rgb_image) {
             std::cout << "ERROR: Failed to load image: " << filename << std::endl;
         } else {
+#pragma omp critical
             img_lst.push_back(img);
         }
     }
@@ -63,6 +65,7 @@ bool compose(const Image &foreground, Image &background) {
     if(foreground.height > background.height | foreground.width > background.width){
         return false;
     }
+
     for(int y = 0; y < foreground.height; ++y){
         for(int x = 0; x < foreground.width; ++x){
 
@@ -71,7 +74,7 @@ bool compose(const Image &foreground, Image &background) {
 
             float alpha = foreground.rgb_image[foregroundIndex + 3] / 255.0f;
             float beta = 1.0f - alpha;
-
+#pragma omp unroll
             for (int color = 0; color < 3; ++color) {
                 background.rgb_image[backgroundIndex + color] =
                         background.rgb_image[backgroundIndex + color] * beta
@@ -87,6 +90,7 @@ int main(){
     Image foreground;
     loadImage(FOREGROUND_PATH,foreground);
 
+
     double totalStartTime = omp_get_wtime();
 
     double startTime = omp_get_wtime();
@@ -98,10 +102,11 @@ int main(){
     std::cout << "Starting alpha-composing" << std::endl;
     startTime = omp_get_wtime();
     bool isComposed;
+#pragma omp parallel for private (isComposed)
     for(Image &background : backgrounds){
         isComposed = compose(foreground, background);
         if(!isComposed){
-            std::cout << "Foreground is bigger than backgroud: "
+            std::cout << "Foreground is bigger than background: "
             << foreground.height<<"x"<<foreground.width << " vs "
             << background.height<<"x"<<background.width << std::endl;
         }
@@ -111,7 +116,7 @@ int main(){
 
     startTime = omp_get_wtime();
     std::cout << "Saving output image in "<< OUTPUT_PATH << std::endl;
-
+#pragma omp parallel for
     for(int i = 0; i < backgrounds.size(); ++i){
         char filename[32];
         sprintf(filename, "%s%i.png", OUTPUT_PATH,i);
@@ -124,6 +129,7 @@ int main(){
     startTime = omp_get_wtime();
     std::cout << "Releasing memory resources" << std::endl;
     stbi_image_free(foreground.rgb_image);
+
     for(Image &background : backgrounds){
         stbi_image_free(background.rgb_image);
     }
