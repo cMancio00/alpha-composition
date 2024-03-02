@@ -1,3 +1,4 @@
 .idea/
 Output/*.png
 Output/*.jpg
+cmake-build-debug/
