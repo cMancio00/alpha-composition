@@ -1,0 +1,12 @@
+\begin{thebibliography}{1}\itemsep=-1pt
+
+\bibitem{valgrind}
+J.~Nichols and N.~Nethercote.
+\newblock Valgrind.
+
+\bibitem{openmp}
+{OpenMP Architecture Review Board}.
+\newblock {\em OpenMP Application Program Interface}.
+\newblock {OpenMP Architecture Review Board}, 2019.
+
+\end{thebibliography}
