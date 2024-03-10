@@ -42,7 +42,6 @@ std::vector<Image> load_images(int start_idx, int end_idx) {
         if (!img.rgb_image) {
             std::cout << "ERROR: Failed to load image: " << filename << std::endl;
         } else {
-#pragma omp critical
             img_lst.push_back(img);
         }
     }
@@ -74,7 +73,7 @@ bool compose(const Image &foreground, Image &background) {
 
             float alpha = foreground.rgb_image[foregroundIndex + 3] / 255.0f;
             float beta = 1.0f - alpha;
-#pragma omp unroll
+
             for (int color = 0; color < 3; ++color) {
                 background.rgb_image[backgroundIndex + color] =
                         background.rgb_image[backgroundIndex + color] * beta
@@ -102,7 +101,6 @@ int main(){
     std::cout << "Starting alpha-composing" << std::endl;
     startTime = omp_get_wtime();
     bool isComposed;
-#pragma omp parallel for private (isComposed)
     for(Image &background : backgrounds){
         isComposed = compose(foreground, background);
         if(!isComposed){
@@ -116,7 +114,7 @@ int main(){
 
     startTime = omp_get_wtime();
     std::cout << "Saving output image in "<< OUTPUT_PATH << std::endl;
-#pragma omp parallel for
+
     for(int i = 0; i < backgrounds.size(); ++i){
         char filename[32];
         sprintf(filename, "%s%i.png", OUTPUT_PATH,i);
