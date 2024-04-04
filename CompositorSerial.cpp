@@ -42,12 +42,14 @@ std::string format_image_path(const char *folder_path, const std::string resolut
 std::vector<Image> load_images(int times,const std::string filename) {
     std::vector<Image> img_lst;
     img_lst.reserve(times);
+#pragma omp parallel for
     for (unsigned long i = 0; i < times; i++) {
         Image img;
         loadImage(filename,img);
         if (!img.rgb_image) {
             std::cout << "ERROR: Failed to load image: " << filename << std::endl;
         } else {
+#pragma omp critical
             img_lst.push_back(img);
         }
     }
@@ -70,7 +72,7 @@ bool compose(const Image &foreground, Image &background) {
     if(foreground.height > background.height | foreground.width > background.width){
         return false;
     }
-
+#pragma omp parallel for collapse(2)
     for(int y = 0; y < foreground.height; ++y){
         for(int x = 0; x < foreground.width; ++x){
 
@@ -79,7 +81,7 @@ bool compose(const Image &foreground, Image &background) {
 
             float alpha = foreground.rgb_image[foregroundIndex + 3] / 255.0f;
             float beta = 1.0f - alpha;
-
+#pragma omp simd
             for (int color = 0; color < 3; ++color) {
                 background.rgb_image[backgroundIndex + color] =
                         background.rgb_image[backgroundIndex + color] * beta
@@ -93,59 +95,63 @@ bool compose(const Image &foreground, Image &background) {
 
 int main(){
 
-
+    std::vector<int> threads = {1,25,50,100,200,500};
+    std::vector<int> times_vector = {100,250,500};
     std::vector<std::string> resolutions = {"HD","FullHD","2K","4K"};
-    std::vector<int> times_vector = {1,5};
 
-    for (int times : times_vector) {
+    for (int num_threads: threads) {
+        omp_set_num_threads(num_threads);
+        std::cout << std::format("{:=>15} threads{:=<15}.\n", num_threads, "");
+        for (int times: times_vector) {
 
-        std::cout << std::format("{:+>15} images{:+<15}.\n", times, "");
-        for (short i = 0; i <= 2; ++i) {
+            std::cout << std::format("{:+>15} images{:+<15}.\n", times, "");
+            for (short i = 0; i <= 2; ++i) {
 
-            auto foreground_resolution = resolutions[i];
-            auto background_resolution = resolutions[i + 1];
+                auto foreground_resolution = resolutions[i];
+                auto background_resolution = resolutions[i + 1];
 
-            std::cout << std::format("{:->15} over {:-<15}\n",
-                                     foreground_resolution, background_resolution);
+                std::cout << std::format("{:->15} over {:-<15}\n",
+                                         foreground_resolution, background_resolution);
 
-            auto foreground_path = format_image_path(FOREGROUND_PATH, foreground_resolution, "png");
-            auto background_name = format_image_path(BACKGROUND_PATH, background_resolution, "jpg");
-            auto output_name = format_image_path(OUTPUT_PATH, background_resolution, "png");
+                auto foreground_path = format_image_path(FOREGROUND_PATH, foreground_resolution, "png");
+                auto background_name = format_image_path(BACKGROUND_PATH, background_resolution, "jpg");
+                auto output_name = format_image_path(OUTPUT_PATH, background_resolution, "png");
 
-            double totalStartTime = omp_get_wtime();
-            //Load foreground
-            Image foreground;
-            loadImage(foreground_path, foreground);
+                double totalStartTime = omp_get_wtime();
+                //Load foreground
+                Image foreground;
+                loadImage(foreground_path, foreground);
 
-            //Load Background images
-            auto backgrounds = load_images(times, background_name);
+                //Load Background images
+                auto backgrounds = load_images(times, background_name);
 
-            //Alpha compositing
-            double startTime = omp_get_wtime();
-            bool isComposed;
-            for (Image &background: backgrounds) {
-                isComposed = compose(foreground, background);
-                if (!isComposed) {
-                    std::cout << "Foreground is bigger than background: "
-                              << foreground.height << "x" << foreground.width << " vs "
-                              << background.height << "x" << background.width << std::endl;
+                //Alpha compositing
+                double startTime = omp_get_wtime();
+                bool isComposed;
+                for (Image &background: backgrounds) {
+                    isComposed = compose(foreground, background);
+                    if (!isComposed) {
+                        std::cout << "Foreground is bigger than background: "
+                                  << foreground.height << "x" << foreground.width << " vs "
+                                  << background.height << "x" << background.width << std::endl;
+                    }
                 }
+                double endTime = omp_get_wtime();
+                std::cout << std::format("Compositing time: {:.4f}\n", endTime - startTime);
+
+                //Saving the Composed image
+                saveImage(output_name, backgrounds[0]);
+
+                //Releasing Resources
+                stbi_image_free(foreground.rgb_image);
+                for (Image &background: backgrounds) {
+                    stbi_image_free(background.rgb_image);
+                }
+                backgrounds.clear();
+
+                double totalEndTime = omp_get_wtime();
+                std::cout << std::format("Total run time: {:.4f}\n", totalEndTime - totalStartTime);
             }
-            double endTime = omp_get_wtime();
-            std::cout << std::format("Compositing time: {:.4f}\n", endTime - startTime);
-
-            //Saving the Composed image
-            saveImage(output_name, backgrounds[0]);
-
-            //Releasing Resources
-            stbi_image_free(foreground.rgb_image);
-            for (Image &background: backgrounds) {
-                stbi_image_free(background.rgb_image);
-            }
-            backgrounds.clear();
-
-            double totalEndTime = omp_get_wtime();
-            std::cout << std::format("Total run time: {:.4f}\n", totalEndTime - totalStartTime);
         }
     }
     return 0;
