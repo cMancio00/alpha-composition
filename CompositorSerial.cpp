@@ -27,6 +27,9 @@ void loadImage(const std::string &image_path, Image &image){
     }
 }
 
+/*
+ * Build a string with the image path given by the parent folder, resolution and image extention
+ */
 std::string format_image_path(const char *folder_path, const std::string resolution_type, const std::string& extention_type){
     auto filename = std::format("{}{}.{}", folder_path, resolution_type,extention_type);
     return filename;
