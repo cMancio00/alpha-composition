@@ -1,0 +1,162 @@
+HD over FullHD, 100 images, 1 threads
+Compositing time: 1.0490
+Total run time: 10.1192
+HD over FullHD, 100 images, 25 threads
+Compositing time: 0.1939
+Total run time: 2.2251
+HD over FullHD, 100 images, 50 threads
+Compositing time: 0.1780
+Total run time: 2.1897
+HD over FullHD, 100 images, 100 threads
+Compositing time: 0.1813
+Total run time: 2.2160
+HD over FullHD, 100 images, 200 threads
+Compositing time: 0.1935
+Total run time: 2.2501
+HD over FullHD, 100 images, 500 threads
+Compositing time: 0.2402
+Total run time: 2.2704
+HD over FullHD, 250 images, 1 threads
+Compositing time: 2.5636
+Total run time: 23.2878
+HD over FullHD, 250 images, 25 threads
+Compositing time: 0.4902
+Total run time: 3.9784
+HD over FullHD, 250 images, 50 threads
+Compositing time: 0.4679
+Total run time: 3.8841
+HD over FullHD, 250 images, 100 threads
+Compositing time: 0.7069
+Total run time: 5.4632
+HD over FullHD, 250 images, 200 threads
+Compositing time: 0.4862
+Total run time: 3.9883
+HD over FullHD, 250 images, 500 threads
+Compositing time: 0.6193
+Total run time: 4.1460
+HD over FullHD, 500 images, 1 threads
+Compositing time: 5.0248
+Total run time: 44.7956
+HD over FullHD, 500 images, 25 threads
+Compositing time: 0.9744
+Total run time: 6.7699
+HD over FullHD, 500 images, 50 threads
+Compositing time: 0.9145
+Total run time: 6.6141
+HD over FullHD, 500 images, 100 threads
+Compositing time: 0.9052
+Total run time: 6.6996
+HD over FullHD, 500 images, 200 threads
+Compositing time: 0.9988
+Total run time: 6.9408
+HD over FullHD, 500 images, 500 threads
+Compositing time: 1.2197
+Total run time: 7.3266
+FullHD over 2K, 100 images, 1 threads
+Compositing time: 2.7120
+Total run time: 12.9515
+FullHD over 2K, 100 images, 25 threads
+Compositing time: 0.4913
+Total run time: 3.3822
+FullHD over 2K, 100 images, 50 threads
+Compositing time: 0.4631
+Total run time: 3.2917
+FullHD over 2K, 100 images, 100 threads
+Compositing time: 0.4631
+Total run time: 3.3166
+FullHD over 2K, 100 images, 200 threads
+Compositing time: 0.4672
+Total run time: 3.9653
+FullHD over 2K, 100 images, 500 threads
+Compositing time: 0.8054
+Total run time: 4.5322
+FullHD over 2K, 250 images, 1 threads
+Compositing time: 6.6236
+Total run time: 28.8842
+FullHD over 2K, 250 images, 25 threads
+Compositing time: 1.2070
+Total run time: 5.6837
+FullHD over 2K, 250 images, 50 threads
+Compositing time: 1.1471
+Total run time: 5.6173
+FullHD over 2K, 250 images, 100 threads
+Compositing time: 1.1233
+Total run time: 5.7030
+FullHD over 2K, 250 images, 200 threads
+Compositing time: 1.1928
+Total run time: 6.4790
+FullHD over 2K, 250 images, 500 threads
+Compositing time: 1.2994
+Total run time: 6.9359
+FullHD over 2K, 500 images, 1 threads
+Compositing time: 12.9313
+Total run time: 55.3377
+FullHD over 2K, 500 images, 25 threads
+Compositing time: 2.4315
+Total run time: 9.6448
+FullHD over 2K, 500 images, 50 threads
+Compositing time: 2.3172
+Total run time: 9.6376
+FullHD over 2K, 500 images, 100 threads
+Compositing time: 2.3223
+Total run time: 10.5759
+FullHD over 2K, 500 images, 200 threads
+Compositing time: 2.3707
+Total run time: 10.8691
+FullHD over 2K, 500 images, 500 threads
+Compositing time: 2.6392
+Total run time: 11.1350
+2K over 4K, 100 images, 1 threads
+Compositing time: 5.1519
+Total run time: 25.1932
+2K over 4K, 100 images, 25 threads
+Compositing time: 0.9405
+Total run time: 7.1719
+2K over 4K, 100 images, 50 threads
+Compositing time: 0.8900
+Total run time: 7.1685
+2K over 4K, 100 images, 100 threads
+Compositing time: 0.8638
+Total run time: 7.1661
+2K over 4K, 100 images, 200 threads
+Compositing time: 0.8672
+Total run time: 9.2574
+2K over 4K, 100 images, 500 threads
+Compositing time: 0.9288
+Total run time: 7.1509
+2K over 4K, 250 images, 1 threads
+Compositing time: 12.9214
+Total run time: 53.6770
+2K over 4K, 250 images, 25 threads
+Compositing time: 2.3354
+Total run time: 11.7055
+2K over 4K, 250 images, 50 threads
+Compositing time: 2.2465
+Total run time: 11.5084
+2K over 4K, 250 images, 100 threads
+Compositing time: 2.1837
+Total run time: 11.5819
+2K over 4K, 250 images, 200 threads
+Compositing time: 2.1616
+Total run time: 13.7906
+2K over 4K, 250 images, 500 threads
+Compositing time: 2.2689
+Total run time: 11.8006
+2K over 4K, 500 images, 1 threads
+Compositing time: 25.6107
+Total run time: 107.3034
+2K over 4K, 500 images, 25 threads
+Compositing time: 4.8894
+Total run time: 21.7791
+2K over 4K, 500 images, 50 threads
+Compositing time: 4.5985
+Total run time: 18.8961
+2K over 4K, 500 images, 100 threads
+Compositing time: 4.4517
+Total run time: 21.1742
+2K over 4K, 500 images, 200 threads
+Compositing time: 4.3413
+Total run time: 21.1970
+2K over 4K, 500 images, 500 threads
+Compositing time: 9.7228
+Total run time: 36.4920
