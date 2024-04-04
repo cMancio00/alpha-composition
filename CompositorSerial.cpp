@@ -1,28 +1,31 @@
 #define STB_IMAGE_IMPLEMENTATION
+
 #include "stb_image.h"
+
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+
 #include "stb_image_write.h"
 #include <iostream>
 #include <vector>
 #include <omp.h>
 #include <format>
 
-const char * FOREGROUND_PATH = "../Input/Foregrounds/";
-const char * BACKGROUND_PATH = "../Input/Backgrounds/";
-const char * OUTPUT_PATH = "../Output/";
+const char *FOREGROUND_PATH = "../Input/Foregrounds/";
+const char *BACKGROUND_PATH = "../Input/Backgrounds/";
+const char *OUTPUT_PATH = "../Output/";
 
-struct Image{
-    int width{0},height{0},channels{0};
+struct Image {
+    int width{0}, height{0}, channels{0};
     uint8_t *rgb_image{nullptr};
 };
 
 /*
  * Load a single image. If image is not RGBA, alpha channel is assumed completely opaque (255).
  */
-void loadImage(const std::string &image_path, Image &image){
-    image.rgb_image = stbi_load(image_path.c_str(),&image.width, &image.height,
-                                     &image.channels, STBI_rgb_alpha);
-    if(image.channels != STBI_rgb_alpha){
+void loadImage(const std::string &image_path, Image &image) {
+    image.rgb_image = stbi_load(image_path.c_str(), &image.width, &image.height,
+                                &image.channels, STBI_rgb_alpha);
+    if (image.channels != STBI_rgb_alpha) {
         image.channels = STBI_rgb_alpha;
     }
 }
@@ -30,8 +33,9 @@ void loadImage(const std::string &image_path, Image &image){
 /*
  * Build a string with the image path given by the parent folder, resolution and image extention
  */
-std::string format_image_path(const char *folder_path, const std::string resolution_type, const std::string& extention_type){
-    auto filename = std::format("{}{}.{}", folder_path, resolution_type,extention_type);
+std::string
+format_image_path(const char *folder_path, const std::string resolution_type, const std::string &extention_type) {
+    auto filename = std::format("{}{}.{}", folder_path, resolution_type, extention_type);
     return filename;
 }
 
@@ -39,13 +43,13 @@ std::string format_image_path(const char *folder_path, const std::string resolut
  * Load jpg images named i.jpg where i is a natural number.
  * All the images are put in a vector of Image struct. AoS.
  */
-std::vector<Image> load_images(int times,const std::string filename) {
+std::vector<Image> load_images(int times, const std::string filename) {
     std::vector<Image> img_lst;
     img_lst.reserve(times);
 #pragma omp parallel for
     for (unsigned long i = 0; i < times; i++) {
         Image img;
-        loadImage(filename,img);
+        loadImage(filename, img);
         if (!img.rgb_image) {
             std::cout << "ERROR: Failed to load image: " << filename << std::endl;
         } else {
@@ -59,9 +63,9 @@ std::vector<Image> load_images(int times,const std::string filename) {
 /*
  * Saves image as png in a desired location.
  */
-void saveImage(const std::string &output_path, const Image image){
+void saveImage(const std::string &output_path, const Image image) {
     stbi_write_png(output_path.c_str(), image.width, image.height, image.channels,
-                   image.rgb_image, image.width * image.channels );
+                   image.rgb_image, image.width * image.channels);
 }
 
 /*
@@ -69,12 +73,12 @@ void saveImage(const std::string &output_path, const Image image){
  * Composition will be saved on background, while foreground remains untouched.
  */
 bool compose(const Image &foreground, Image &background) {
-    if(foreground.height > background.height | foreground.width > background.width){
+    if (foreground.height > background.height | foreground.width > background.width) {
         return false;
     }
 #pragma omp parallel for collapse(2)
-    for(int y = 0; y < foreground.height; ++y){
-        for(int x = 0; x < foreground.width; ++x){
+    for (int y = 0; y < foreground.height; ++y) {
+        for (int x = 0; x < foreground.width; ++x) {
 
             int backgroundIndex = (y * background.width + x) * STBI_rgb_alpha;
             int foregroundIndex = (y * foreground.width + x) * STBI_rgb_alpha;
@@ -93,29 +97,28 @@ bool compose(const Image &foreground, Image &background) {
     return true;
 }
 
-int main(){
+int main() {
 
-    std::vector<int> threads = {1,25,50,100,200,500};
-    std::vector<int> times_vector = {100,250,500};
-    std::vector<std::string> resolutions = {"HD","FullHD","2K","4K"};
+    std::vector<int> threads = {1, 25, 50, 100, 200, 500};
+    std::vector<int> times_vector = {100, 250, 500};
+    std::vector<std::string> resolutions = {"HD", "FullHD", "2K", "4K"};
 
-    for (int num_threads: threads) {
-        omp_set_num_threads(num_threads);
-        std::cout << std::format("{:=>15} threads{:=<15}.\n", num_threads, "");
+
+    for (short i = 0; i <= 2; ++i) {
+
+        auto foreground_resolution = resolutions[i];
+        auto background_resolution = resolutions[i + 1];
+
+        auto foreground_path = format_image_path(FOREGROUND_PATH, foreground_resolution, "png");
+        auto background_name = format_image_path(BACKGROUND_PATH, background_resolution, "jpg");
+        auto output_name = format_image_path(OUTPUT_PATH, background_resolution, "png");
+
         for (int times: times_vector) {
+            for (int num_threads: threads) {
+                omp_set_num_threads(num_threads);
 
-            std::cout << std::format("{:+>15} images{:+<15}.\n", times, "");
-            for (short i = 0; i <= 2; ++i) {
-
-                auto foreground_resolution = resolutions[i];
-                auto background_resolution = resolutions[i + 1];
-
-                std::cout << std::format("{:->15} over {:-<15}\n",
-                                         foreground_resolution, background_resolution);
-
-                auto foreground_path = format_image_path(FOREGROUND_PATH, foreground_resolution, "png");
-                auto background_name = format_image_path(BACKGROUND_PATH, background_resolution, "jpg");
-                auto output_name = format_image_path(OUTPUT_PATH, background_resolution, "png");
+                std::cout << std::format("{} over {}, {} images, {} threads\n",
+                                         foreground_resolution,background_resolution,times,num_threads);
 
                 double totalStartTime = omp_get_wtime();
                 //Load foreground
@@ -137,7 +140,7 @@ int main(){
                     }
                 }
                 double endTime = omp_get_wtime();
-                std::cout << std::format("Compositing time: {:.4f}\n", endTime - startTime);
+                std::string composing_time = std::format("Compositing time: {:.4f}", endTime - startTime);
 
                 //Saving the Composed image
                 saveImage(output_name, backgrounds[0]);
@@ -150,7 +153,9 @@ int main(){
                 backgrounds.clear();
 
                 double totalEndTime = omp_get_wtime();
-                std::cout << std::format("Total run time: {:.4f}\n", totalEndTime - totalStartTime);
+                std::string total_time = std::format("Total run time: {:.4f}", totalEndTime - totalStartTime);
+
+                std::cout << std::format("{}\n{}\n",composing_time,total_time);
             }
         }
     }
