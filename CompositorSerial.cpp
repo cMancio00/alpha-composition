@@ -5,12 +5,13 @@
 #include <iostream>
 #include <vector>
 #include <omp.h>
+#include <format>
 
-#define FOREGROUND_PATH "../Input/kitty.png"
-#define BACKGROUND_PATH "../Input/Backgrounds/"
-#define OUTPUT_PATH "../Output/"
+const char * FOREGROUND_PATH = "../Input/Foregrounds/";
+const char * BACKGROUND_PATH = "../Input/Backgrounds/";
+const char * OUTPUT_PATH = "../Output/";
 
-static const int maxImageIdx = 564;
+static const int maxImageIdx = 100;
 
 struct Image{
     int width{0},height{0},channels{0};
@@ -27,16 +28,20 @@ void loadImage(const std::string &image_path, Image &image){
         image.channels = STBI_rgb_alpha;
     }
 }
+
+std::string format_image_path(const char *folder_path, const std::string resolution_type, const std::string extention_type){
+    auto filename = std::format("{}{}.{}", folder_path, resolution_type,extention_type);
+    return filename;
+}
+
 /*
  * Load jpg images named i.jpg where i is a natural number.
  * All the images are put in a vector of Image struct. AoS.
  */
-std::vector<Image> load_images(int start_idx, int end_idx) {
+std::vector<Image> load_images(int times,const std::string filename) {
     std::vector<Image> img_lst;
-#pragma omp parallel for
-    for (unsigned long i = start_idx; i <= end_idx; i++) {
-        char filename[32];
-        sprintf(filename, "%s%lu.jpg", BACKGROUND_PATH,i);
+    img_lst.reserve(times);
+    for (unsigned long i = 0; i < times; i++) {
         Image img;
         loadImage(filename,img);
         if (!img.rgb_image) {
@@ -86,14 +91,17 @@ bool compose(const Image &foreground, Image &background) {
 }
 
 int main(){
+    auto foreground_path = format_image_path(FOREGROUND_PATH,"2K","png");
+    auto background_name = format_image_path(BACKGROUND_PATH,"4K","jpg");
+
     Image foreground;
-    loadImage(FOREGROUND_PATH,foreground);
+    loadImage(foreground_path,foreground);
 
 
     double totalStartTime = omp_get_wtime();
-
     double startTime = omp_get_wtime();
-    auto backgrounds = load_images(1, maxImageIdx);
+
+    auto backgrounds = load_images(maxImageIdx,background_name);
     double endTime = omp_get_wtime();
     std::cout << "Backgrounds loaded #: " << backgrounds.size() << " - expected #: " << maxImageIdx << std::endl;
     std::cout << "Loading time: " << endTime - startTime << std::endl << std::endl;
@@ -112,17 +120,12 @@ int main(){
     endTime = omp_get_wtime();
     std::cout << "Compositing time: " << endTime - startTime << std::endl << std::endl;
 
-    startTime = omp_get_wtime();
-    std::cout << "Saving output image in "<< OUTPUT_PATH << std::endl;
 
-    for(int i = 0; i < backgrounds.size(); ++i){
-        char filename[32];
-        sprintf(filename, "%s%i.png", OUTPUT_PATH,i);
-        saveImage(filename,backgrounds[i]);
-    }
-    endTime = omp_get_wtime();
+    std::cout << "Saving output image in "<< OUTPUT_PATH << std::endl;
+    char filename[32];
+    sprintf(filename, "%s%i.png", OUTPUT_PATH,1);
+    saveImage(filename,backgrounds[1]);
     std::cout << "Output image saved" << std::endl;
-    std::cout << "Saving time: " << endTime - startTime << std::endl << std::endl;
 
     startTime = omp_get_wtime();
     std::cout << "Releasing memory resources" << std::endl;
@@ -133,7 +136,7 @@ int main(){
     }
     backgrounds.clear();
     endTime = omp_get_wtime();
-    std::cout << "Memory realeased" << std::endl;
+    std::cout << "Memory released" << std::endl;
     std::cout << "Realising time: " << endTime - startTime << std::endl << std::endl;
 
     double totalEndTime = omp_get_wtime();
