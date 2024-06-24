@@ -1,9 +1,10 @@
 #include "image.h"
 #include <iostream>
 #include <vector>
-#include <omp.h>
+#include <openacc.h>
 #include <format>
 #include <fstream>
+#include <chrono>
 #include "stb_image.h"
 #include "compositor.h"
 
@@ -13,12 +14,11 @@ const char *OUTPUT_PATH = "../Output/";
 
 int main() {
 
-    std::vector<int> threads = {1, 25, 50, 100, 200, 500};
-    std::vector<int> times_vector = {100, 250, 500};
+    std::vector<int> times_vector = {100};
     std::vector<std::string> resolutions = {"HD", "FullHD", "2K", "4K"};
     std::ofstream csv;
-    csv.open ("../output.csv");
-    csv << "threads,images,background,foreground,composing\n";
+    csv.open ("../output_gpu.csv");
+    csv << "images,background,foreground,composing,total\n";
 
     for (short i = 0; i <= 2; ++i) {
 
@@ -30,13 +30,11 @@ int main() {
         auto output_name = Image::format_image_path(OUTPUT_PATH, background_resolution, "png");
 
         for (int times: times_vector) {
-            for (int num_threads: threads) {
-                omp_set_num_threads(num_threads);
 
-                std::cout << std::format("{} over {}, {} images, {} threads\n",
-                                         foreground_resolution,background_resolution,times,num_threads);
+                std::cout << std::format("{} over {}, {} images\n",
+                                         foreground_resolution,background_resolution,times);
 
-                double totalStartTime = omp_get_wtime();
+                auto totalStartTime = std::chrono::high_resolution_clock::now();
                 //Load foreground
                 Image foreground;
                 Image::loadImage(foreground_path, foreground);
@@ -45,19 +43,19 @@ int main() {
                 auto backgrounds = Image::load_images(times, background_name);
 
                 //Alpha compositing
-                double startTime = omp_get_wtime();
+                auto startTime = std::chrono::high_resolution_clock::now();
                 bool isComposed;
                 for (Image &background: backgrounds) {
-                    isComposed = OpenMP_compose(foreground, background);
+                    isComposed = OpenACC_compose(foreground, background);
                     if (!isComposed) {
                         std::cout << "Foreground is bigger than background: "
                                   << foreground.height << "x" << foreground.width << " vs "
                                   << background.height << "x" << background.width << std::endl;
                     }
                 }
-                double endTime = omp_get_wtime();
-                double composing = endTime - startTime;
-                std::string composing_time = std::format("Compositing time: {:.4f}", composing);
+                auto endTime = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> composing = endTime - startTime;
+                std::string composing_time = std::format("Compositing time: {:.4f}", composing.count());
 
                 //Saving the Composed image
                 Image::saveImage(output_name, backgrounds[0]);
@@ -69,16 +67,16 @@ int main() {
                 }
                 backgrounds.clear();
 
-                double totalEndTime = omp_get_wtime();
-                double total = totalEndTime - totalStartTime;
-                std::string total_time = std::format("Total run time: {:.4f}", total);
+                auto totalEndTime = std::chrono::high_resolution_clock::now();
+                std::chrono::duration<double> total = totalEndTime - totalStartTime;
+                std::string total_time = std::format("Total run time: {:.4f}", total.count());
 
                 std::cout << std::format("{}\n{}\n",composing_time,total_time);
 
-                csv << std::format("{},{},{},{},{:.4f},{:.4f}\n",
-                                   num_threads,times,background_resolution,foreground_resolution,
-                                   composing,total);
-            }
+                csv << std::format("{},{},{},{:.4f},{:.4f}\n",
+                                   times,background_resolution,foreground_resolution,
+                                   composing.count(),total.count());
+
         }
     }
     csv.close();

@@ -31,6 +31,7 @@ bool OpenACC_compose(const Image &foreground, Image &background) {
     if (foreground.height > background.height | foreground.width > background.width) {
         return false;
     }
+#pragma acc parallel loop
 
     for (int y = 0; y < foreground.height; ++y) {
         for (int x = 0; x < foreground.width; ++x) {
