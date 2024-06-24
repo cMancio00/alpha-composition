@@ -9,6 +9,7 @@
 #include <vector>
 #include <omp.h>
 #include <format>
+#include <fstream>
 
 const char *FOREGROUND_PATH = "../Input/Foregrounds/";
 const char *BACKGROUND_PATH = "../Input/Backgrounds/";
@@ -102,7 +103,9 @@ int main() {
     std::vector<int> threads = {1, 25, 50, 100, 200, 500};
     std::vector<int> times_vector = {100, 250, 500};
     std::vector<std::string> resolutions = {"HD", "FullHD", "2K", "4K"};
-
+    std::ofstream csv;
+    csv.open ("../output.csv");
+    csv << "threads,images,background,foreground,composing\n";
 
     for (short i = 0; i <= 2; ++i) {
 
@@ -140,7 +143,8 @@ int main() {
                     }
                 }
                 double endTime = omp_get_wtime();
-                std::string composing_time = std::format("Compositing time: {:.4f}", endTime - startTime);
+                double composing = endTime - startTime;
+                std::string composing_time = std::format("Compositing time: {:.4f}", composing);
 
                 //Saving the Composed image
                 saveImage(output_name, backgrounds[0]);
@@ -153,11 +157,17 @@ int main() {
                 backgrounds.clear();
 
                 double totalEndTime = omp_get_wtime();
-                std::string total_time = std::format("Total run time: {:.4f}", totalEndTime - totalStartTime);
+                double total = totalEndTime - totalStartTime;
+                std::string total_time = std::format("Total run time: {:.4f}", total);
 
                 std::cout << std::format("{}\n{}\n",composing_time,total_time);
+
+                csv << std::format("{},{},{},{},{:.4f},{:.4f}\n",
+                                   num_threads,times,background_resolution,foreground_resolution,
+                                   composing,total);
             }
         }
     }
+    csv.close();
     return 0;
 }
