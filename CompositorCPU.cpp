@@ -5,39 +5,13 @@
 #include <format>
 #include <fstream>
 #include "stb_image.h"
+#include "compositor.h"
 
 const char *FOREGROUND_PATH = "../Input/Foregrounds/";
 const char *BACKGROUND_PATH = "../Input/Backgrounds/";
 const char *OUTPUT_PATH = "../Output/";
 
-/*
- * Alpha-compose foreground image on background image.
- * Composition will be saved on background, while foreground remains untouched.
- */
-bool compose(const Image &foreground, Image &background) {
-    if (foreground.height > background.height | foreground.width > background.width) {
-        return false;
-    }
-#pragma omp parallel for collapse(2)
-    for (int y = 0; y < foreground.height; ++y) {
-        for (int x = 0; x < foreground.width; ++x) {
 
-            int backgroundIndex = (y * background.width + x) * STBI_rgb_alpha;
-            int foregroundIndex = (y * foreground.width + x) * STBI_rgb_alpha;
-
-            float alpha = foreground.rgb_image[foregroundIndex + 3] / 255.0f;
-            float beta = 1.0f - alpha;
-#pragma omp simd
-            for (int color = 0; color < 3; ++color) {
-                background.rgb_image[backgroundIndex + color] =
-                        background.rgb_image[backgroundIndex + color] * beta
-                        + foreground.rgb_image[foregroundIndex + color] * alpha;
-
-            }
-        }
-    }
-    return true;
-}
 
 int main() {
 
@@ -76,7 +50,7 @@ int main() {
                 double startTime = omp_get_wtime();
                 bool isComposed;
                 for (Image &background: backgrounds) {
-                    isComposed = compose(foreground, background);
+                    isComposed = OpenMP_compose(foreground, background);
                     if (!isComposed) {
                         std::cout << "Foreground is bigger than background: "
                                   << foreground.height << "x" << foreground.width << " vs "

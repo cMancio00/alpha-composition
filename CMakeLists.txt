@@ -7,8 +7,12 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -fstrict-aliasing -fopenmp-simd")
 
 file(MAKE_DIRECTORY Output)
-add_executable(Compositor CompositorSerial.cpp
+set(SOURCES
         image.h
-        image.cpp)
+        image.cpp
+        compositor.h
+        compositor.cpp
+)
+add_executable(CompositorCPU CompositorCPU.cpp ${SOURCES})
 find_package(OpenMP REQUIRED)
-target_link_libraries(Compositor OpenMP::OpenMP_CXX)
+target_link_libraries(CompositorCPU OpenMP::OpenMP_CXX)
