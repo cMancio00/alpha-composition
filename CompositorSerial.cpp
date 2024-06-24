@@ -1,73 +1,14 @@
-#define STB_IMAGE_IMPLEMENTATION
-
-#include "stb_image.h"
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-
-#include "stb_image_write.h"
+#include "image.h"
 #include <iostream>
 #include <vector>
 #include <omp.h>
 #include <format>
 #include <fstream>
+#include "stb_image.h"
 
 const char *FOREGROUND_PATH = "../Input/Foregrounds/";
 const char *BACKGROUND_PATH = "../Input/Backgrounds/";
 const char *OUTPUT_PATH = "../Output/";
-
-struct Image {
-    int width{0}, height{0}, channels{0};
-    uint8_t *rgb_image{nullptr};
-};
-
-/*
- * Load a single image. If image is not RGBA, alpha channel is assumed completely opaque (255).
- */
-void loadImage(const std::string &image_path, Image &image) {
-    image.rgb_image = stbi_load(image_path.c_str(), &image.width, &image.height,
-                                &image.channels, STBI_rgb_alpha);
-    if (image.channels != STBI_rgb_alpha) {
-        image.channels = STBI_rgb_alpha;
-    }
-}
-
-/*
- * Build a string with the image path given by the parent folder, resolution and image extention
- */
-std::string
-format_image_path(const char *folder_path, const std::string resolution_type, const std::string &extention_type) {
-    auto filename = std::format("{}{}.{}", folder_path, resolution_type, extention_type);
-    return filename;
-}
-
-/*
- * Load jpg images named i.jpg where i is a natural number.
- * All the images are put in a vector of Image struct. AoS.
- */
-std::vector<Image> load_images(int times, const std::string filename) {
-    std::vector<Image> img_lst;
-    img_lst.reserve(times);
-#pragma omp parallel for
-    for (unsigned long i = 0; i < times; i++) {
-        Image img;
-        loadImage(filename, img);
-        if (!img.rgb_image) {
-            std::cout << "ERROR: Failed to load image: " << filename << std::endl;
-        } else {
-#pragma omp critical
-            img_lst.push_back(img);
-        }
-    }
-    return img_lst;
-}
-
-/*
- * Saves image as png in a desired location.
- */
-void saveImage(const std::string &output_path, const Image image) {
-    stbi_write_png(output_path.c_str(), image.width, image.height, image.channels,
-                   image.rgb_image, image.width * image.channels);
-}
 
 /*
  * Alpha-compose foreground image on background image.
@@ -112,9 +53,9 @@ int main() {
         auto foreground_resolution = resolutions[i];
         auto background_resolution = resolutions[i + 1];
 
-        auto foreground_path = format_image_path(FOREGROUND_PATH, foreground_resolution, "png");
-        auto background_name = format_image_path(BACKGROUND_PATH, background_resolution, "jpg");
-        auto output_name = format_image_path(OUTPUT_PATH, background_resolution, "png");
+        auto foreground_path = Image::format_image_path(FOREGROUND_PATH, foreground_resolution, "png");
+        auto background_name = Image::format_image_path(BACKGROUND_PATH, background_resolution, "jpg");
+        auto output_name = Image::format_image_path(OUTPUT_PATH, background_resolution, "png");
 
         for (int times: times_vector) {
             for (int num_threads: threads) {
@@ -126,10 +67,10 @@ int main() {
                 double totalStartTime = omp_get_wtime();
                 //Load foreground
                 Image foreground;
-                loadImage(foreground_path, foreground);
+                Image::loadImage(foreground_path, foreground);
 
                 //Load Background images
-                auto backgrounds = load_images(times, background_name);
+                auto backgrounds = Image::load_images(times, background_name);
 
                 //Alpha compositing
                 double startTime = omp_get_wtime();
@@ -147,7 +88,7 @@ int main() {
                 std::string composing_time = std::format("Compositing time: {:.4f}", composing);
 
                 //Saving the Composed image
-                saveImage(output_name, backgrounds[0]);
+                Image::saveImage(output_name, backgrounds[0]);
 
                 //Releasing Resources
                 stbi_image_free(foreground.rgb_image);
