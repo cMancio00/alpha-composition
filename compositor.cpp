@@ -1,5 +1,6 @@
 #include "image.h"
 #include "stb_image.h"
+#include <omp.h>
 
 
 bool OpenMP_compose(const Image &foreground, Image &background) {
@@ -31,9 +32,9 @@ bool OpenACC_compose(const Image &foreground, Image &background) {
     if (foreground.height > background.height | foreground.width > background.width) {
         return false;
     }
-#pragma acc parallel loop
 
-    for (int y = 0; y < foreground.height; ++y) {
+#pragma omp target teams distribute parallel for collapse(2) map(to: foreground.rgb_image[:foreground.width * foreground.height * STBI_rgb_alpha], background.rgb_image[:background.width * background.height * STBI_rgb_alpha])
+   for (int y = 0; y < foreground.height; ++y) {
         for (int x = 0; x < foreground.width; ++x) {
 
             int backgroundIndex = (y * background.width + x) * STBI_rgb_alpha;

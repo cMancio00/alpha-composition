@@ -12,10 +12,15 @@ set(SOURCES
         compositor.h
         compositor.cpp
 )
-add_executable(CompositorCPU CompositorCPU.cpp ${SOURCES})
+
+# Find OpenMP (for CPU and GPU)
 find_package(OpenMP REQUIRED)
-target_link_libraries(CompositorCPU OpenMP::OpenMP_CXX)
-target_compile_options(CompositorCPU PRIVATE -fopenmp -fstrict-aliasing -fopenmp-simd)
 
 add_executable(CompositorGPU CompositorGPU.cpp ${SOURCES})
-target_compile_options(CompositorGPU PRIVATE -fopenacc)
+target_link_libraries(CompositorGPU PRIVATE OpenMP::OpenMP_CXX)
+target_compile_options(CompositorGPU PRIVATE -fopenmp)
+
+# CompositorCPU
+add_executable(CompositorCPU CompositorCPU.cpp ${SOURCES})
+target_link_libraries(CompositorCPU PRIVATE OpenMP::OpenMP_CXX)
+target_compile_options(CompositorCPU PRIVATE ${OpenMP_CXX_FLAGS})  # OpenMP compiler flags
