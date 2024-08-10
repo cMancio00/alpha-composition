@@ -1,4 +1,4 @@
-threads,images,background,foreground,composing
+threads,images,background,foreground,composing,total
 1,100,FullHD,HD,0.3958,3.8103
 25,100,FullHD,HD,0.1198,1.0371
 50,100,FullHD,HD,0.1126,1.0616

@@ -18,7 +18,7 @@ int main() {
     std::vector<std::string> resolutions = {"HD", "FullHD", "2K", "4K"};
     std::ofstream csv;
     csv.open ("../output.csv");
-    csv << "threads,images,background,foreground,composing\n";
+    csv << "threads,images,background,foreground,composing,total\n";
 
     for (short i = 0; i <= 2; ++i) {
 
