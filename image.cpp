@@ -9,9 +9,10 @@
 #endif //STB_IMAGE_WRITE_IMPLEMENTATION
 #include "image.h"
 #include <string>
-#include <format>
 #include <vector>
 #include <iostream>
+#include <sstream>
+
 
 /*
  * Load a single image. If image is not RGBA, alpha channel is assumed completely opaque (255).
@@ -29,9 +30,11 @@ void Image::loadImage(const std::string &image_path, Image &image) {
  */
 std::string
 Image::format_image_path(const char *folder_path, const std::string& resolution_type, const std::string &extension_type) {
-    auto filename = std::format("{}{}.{}", folder_path, resolution_type, extension_type);
-    return filename;
+    std::ostringstream oss;
+    oss << folder_path << resolution_type << "." << extension_type;
+    return oss.str();
 }
+
 
 /*
  * Load jpg images named i.jpg where i is a natural number.

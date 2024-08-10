@@ -5,7 +5,7 @@
 #include <format>
 #include <fstream>
 #include "stb_image.h"
-#include "compositor.h"
+#include "OpenMP_compositor.h"
 
 const char *FOREGROUND_PATH = "../Input/Foregrounds/";
 const char *BACKGROUND_PATH = "../Input/Backgrounds/";
@@ -13,8 +13,8 @@ const char *OUTPUT_PATH = "../Output/";
 
 int main() {
 
-    std::vector<int> threads = {1, 25, 50, 100, 200, 500};
-    std::vector<int> times_vector = {100, 250, 500};
+    std::vector<int> threads = {1, 25, 50, 100, 200, 400};
+    std::vector<int> times_vector = {100, 250, 400};
     std::vector<std::string> resolutions = {"HD", "FullHD", "2K", "4K"};
     std::ofstream csv;
     csv.open ("../output.csv");
