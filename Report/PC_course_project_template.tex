@@ -8,6 +8,32 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{float}
+
+\definecolor{keywords}{RGB}{0,0,255}
+\definecolor{comments}{RGB}{0,128,0}
+\definecolor{strings}{RGB}{255,0,0}
+\definecolor{background}{RGB}{245,245,245}
+
+\lstdefinestyle{cppstyle}{
+	language=C++,
+	backgroundcolor=\color{background},
+	basicstyle=\ttfamily\small,
+	keywordstyle=\color{keywords}\bfseries,
+	commentstyle=\color{comments}\itshape,
+	stringstyle=\color{strings},
+	numbers=left,
+	numberstyle=\tiny\color{gray},
+	stepnumber=1,
+	numbersep=5pt,
+	tabsize=4,
+	breaklines=true,
+	showspaces=false,
+	showstringspaces=false,
+	escapeinside={(*@}{@*)}
+}
 
 \lstdefinestyle{compactcode}{
 	basicstyle=\small\ttfamily,
@@ -28,7 +54,7 @@
 % If you comment hyperref and then uncomment it, you should delete
 % egpaper.aux before re-running latex.  (Or just hit 'q' on the first latex
 % run, let it finish, and you should be clear).
-\usepackage[pagebackref=true,breaklinks=true,letterpaper=true,colorlinks,bookmarks=false]{hyperref}
+
 
 \cvprfinalcopy % *** Uncomment this line for the final submission
 
@@ -57,7 +83,7 @@ E-mail address\\
 
 %%%%%%%%% ABSTRACT
 \begin{abstract}
-We implement a parallel version of the alpha compositor, to compose a foreground over multiples  background in a fixed position, starting from a serial version. We also show the speed up we gained of just the compositing part and the overall program with 12 and 7 times of speed up respectively. The tests were made on an Arch Laptop with Linux Kernel 6.7.9, 11th Gen Intel(R) Core(TM) i7-11800H @ 2.30GHz 8 cores 16 threads,  23 GB of dual Channel 3200MHz RAM (16 + 8) and max memory bandwidth 51.2 GB/s.
+In this report, we present the implementation of a parallel version of alpha compositing using C++ and OpenMP \cite{openmp}, achieving a speedup of nearly five times. We tested various combinations, including HD to Full HD, Full HD to 2K, and 2K to 4K, while varying the number of threads and images processed.
 \end{abstract}
 
 %%%%%%%%% BODY TEXT
@@ -77,69 +103,127 @@ For our scope the foreground must be completely opaque. Changing the weights lea
 %-------------------------------------------------------------------------
 \subsection{Compositing Algorithm}
 
-The compositing algorithm is straightforward, we just need to apply the \ref{eq:composting} on every channel of the background image.
-\begin{lstlisting}[style=compactcode, language=C]
+The compositing algorithm is straightforward, we just need to apply the \ref{eq:composting} on every channel of the background image, as shown in listing \ref{compose}.
+\begin{lstlisting}[style=cppstyle, language=C, caption={Snippet of compose funcion},label={compose}]
 
-for (int color = 0; color < 3; ++color) {
-	background.rgb_image[backgroundIndex + color] =
-	background.rgb_image[backgroundIndex + color] * beta
-	+ foreground.rgb_image[foregroundIndex + color] * alpha;
+bool OpenMP_compose(const Image &foreground, Image &background) {
+	if (foreground.height > background.height | foreground.width > background.width) {
+		return false;
+	}
+	#pragma omp parallel for collapse(2) shared(foreground)
+	for (int y = 0; y < foreground.height; ++y) {
+		for (int x = 0; x < foreground.width; ++x) {
+			
+			int backgroundIndex = (y * background.width + x) * STBI_rgb_alpha;
+			int foregroundIndex = (y * foreground.width + x) * STBI_rgb_alpha;
+			
+			float alpha = static_cast<float>(foreground.rgb_image[foregroundIndex + 3]) / 255.0f;
+			float beta = 1.0f - alpha;
+			#pragma omp simd
+			for (int color = 0; color < 3; ++color) {
+				background.rgb_image[backgroundIndex + color] =
+				static_cast<float>(background.rgb_image[backgroundIndex + color]) * beta
+				+ static_cast<float>(foreground.rgb_image[foregroundIndex + color]) * alpha;
+				
+			}
+		}
+	}
+	return true;
 }
 
 \end{lstlisting}
 
-This is just a snippet of the compose function.
 %-------------------------------------------------------------------------
 
-The program has to performe 3 simple tasks:
-\begin{enumerate}
-	\item Read Foreground and a vector of Backgrounds;
-	\item Compose Foreground on every Background;
-	\item Save all the Backgrounds on disk.
-\end{enumerate}
-The most expensive operation is as expected the last one.
+\section{Results}
 
-\begin{figure*}[htbp]
-	\centering
-	\includegraphics[width=\textwidth]{Threads.png}
-	\caption{All cores are working}
-	\label{fig:Cores}
-\end{figure*}
-\section{Parallelization Criteria}
-There are many ways to parallelize a program. The first step we take is to us Vallgrid \cite{valgrind} to check that we don't have leaks in the serial version of the program.
+Tables  \ref{tab:fullhd}, \ref{tab:2k}, \ref{tab:4k} shows compositing results and speed up, groupped by the background resolution.
 
-We can now decide how to parallelize the program using OpenMP \cite{openmp}.
-Since we are dealing with small images, parallelize the compositing function will lead a slower computing time, instead we let each thread to call its own compositing function to a defined image. Loading and Saving follows the same idea.
-We got the following results:
-\begin{table}[htbp]
+\begin{table}[h]
 	\centering
-	\begin{tabular}{|l|c|c|c|c|}
+	\caption{FullHD result}
+	\begin{tabular}{|c|c|c|c|}
 		\hline
-		& Load & Compose & Save & Total\\
+		\textbf{Threads} & \textbf{Composing Time} & \textbf{Background} & \textbf{Speedup} \\
 		\hline
-		Serial & 0.57s & 0.77s & 40.78s & 42,13s\\
-		Parallel & 0.32s & 0.058s & 5,90s & 6.29s\\
+		1   & 0.3958 & FullHD & 1.0 \\
+		25  & 0.1198 & FullHD & 3.3038 \\
+		50  & 0.1126 & FullHD & 3.5151 \\
+		100 & 0.1195 & FullHD & 3.3121 \\
+		200 & 0.1409 & FullHD & 2.8091 \\
+		400 & 0.1965 & FullHD & 2.0142 \\
 		\hline
 	\end{tabular}
-	\caption{256x256 Foreground and 564 Backgrounds (roughly same dimention of foreground ).}
-	\label{tab:Mesurements}
+	\label{tab:fullhd}
 \end{table}
-\begin{table}[htbp]
+
+\begin{table}[h]
 	\centering
-	\begin{tabular}{|l|c|}
+	\caption{2K result}
+	\begin{tabular}{|c|c|c|c|}
 		\hline
-		Fase & Speedup \\
+		\textbf{Threads} & \textbf{Composing Time} & \textbf{Background} & \textbf{Speedup} \\
 		\hline
-		Load & $ \approx 1.78$ \\
-		Compose & $ \approx 13.28$ \\
-		Save & $\approx 6.91$ \\
-		Total & $\approx 6.70$ \\
+		1   & 1.0272 & 2K     & 1.0 \\
+		25  & 0.2661 & 2K     & 3.8602 \\
+		50  & 0.2511 & 2K     & 4.0908 \\
+		100 & 0.2250 & 2K     & 4.5653 \\
+		200 & 0.2535 & 2K     & 4.0521 \\
+		400 & 0.2866 & 2K     & 3.5841 \\
 		\hline
 	\end{tabular}
-	\caption{Speedup.}
-	\label{tab:Speedup}
+	\label{tab:2k}
 \end{table}
-We can see from figure \ref*{fig:Cores} that all the cores are woking during the parallel execution.
+
+\begin{table}[h]
+	\centering
+	\caption{4K result}
+	\begin{tabular}{|c|c|c|c|}
+		\hline
+		\textbf{Threads} & \textbf{Composing Time} & \textbf{Background} & \textbf{Speedup} \\
+		\hline
+		1   & 2.0763 & 4K     & 1.0 \\
+		25  & 0.4922 & 4K     & 4.2184 \\
+		50  & 0.4668 & 4K     & 4.4479 \\
+		100 & 0.4276 & 4K     & 4.8557 \\
+		200 & 0.4343 & 4K     & 4.7808 \\
+		400 & 0.4688 & 4K     & 4.4290 \\
+		\hline
+	\end{tabular}
+	\label{tab:4k}
+\end{table}
+
+In Figure \ref{fig:compositing} we show the compositing result of a Background image in 4K and a Foreground in 2K.
+
+\begin{figure}[H]
+	\caption{Compositing result example, 2K over 4K}
+	\centering
+	\label{fig:compositing}
+	\includegraphics[width=0.5\textwidth]{../Output/4K.png}
+\end{figure}
+
+In Figuers \ref{fig:fullhd}, \ref{fig:2K}  and \ref{fig:4K} we show the bar plots of the resoults
+
+\begin{figure}[H]
+	\caption{SpeedUp on FullHD Backgroung}
+	\centering
+	\label{fig:fullhd}
+	\includegraphics[width=0.6\textwidth]{../plots/fullhd.png}
+\end{figure}
+
+\begin{figure}[H]
+	\caption{SpeedUp on 2K Backgroung}
+	\centering
+	\label{fig:2K}
+	\includegraphics[width=0.6\textwidth]{../plots/2k.png}
+\end{figure}
+
+\begin{figure}[H]
+	\caption{SpeedUp on 4K Backgroung}
+	\centering
+	\label{fig:4K}
+	\includegraphics[width=0.6\textwidth]{../plots/4k.png}
+\end{figure}
 
 
 
